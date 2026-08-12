@@ -1,0 +1,352 @@
+// GSGLOGISTIQUE v2 — Prisma schema
+// Source of truth for the database. See docs/ARCHITECTURE.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum ParcelState {
+  registered
+  received_warehouse
+  preparing
+  shipped
+  in_transit
+  arrived_country
+  customs
+  out_for_delivery
+  delivered
+  cancelled
+}
+
+enum PaymentState {
+  pending
+  paid
+  refunded
+  waived
+}
+
+enum BoxStatus {
+  open
+  shipped
+  in_transit
+  arrived
+  closed
+}
+
+enum BoxType {
+  CARGO
+  EXPRESS
+}
+
+enum CashOpType {
+  inflow
+  outflow
+  transfer
+}
+
+enum Currency {
+  USD
+  XOF
+  EUR
+}
+
+// ─── Identity & access ──────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  label       String
+  permissions Json     // string[]  — see @gsg/shared-types/permissions
+  createdAt   DateTime @default(now())
+  users       User[]
+
+  @@map("roles")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         Role     @relation(fields: [roleId], references: [id])
+  roleId       String   @map("role_id")
+  country      String?  // 'US' | 'BF' | null
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+  createdBoxes  Box[]            @relation("BoxCreatedBy")
+  createdParcels Parcel[]        @relation("ParcelCreatedBy")
+  parcelEvents  ParcelEvent[]
+  payments      Payment[]
+  cashOps       CashOperation[]
+
+  @@index([active])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ─── Customers ──────────────────────────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(uuid())
+  fullName  String   @map("full_name")
+  phone     String
+  email     String?
+  country   String
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  asSender    Parcel[] @relation("ParcelSender")
+  asRecipient Parcel[] @relation("ParcelRecipient")
+
+  @@index([phone])
+  @@index([country])
+  @@map("customers")
+}
+
+// ─── Logistics: Box & Parcel ────────────────────────────────────────────────
+
+model Box {
+  id            String    @id @default(uuid())
+  reference     String    @unique
+  type          BoxType
+  capacityKg    Decimal   @map("capacity_kg") @db.Decimal(10, 2)
+  originCountry String    @map("origin_country")
+  destCountry   String    @map("dest_country")
+  status        BoxStatus @default(open)
+  departedAt    DateTime? @map("departed_at")
+  arrivedAt     DateTime? @map("arrived_at")
+
+  createdBy   User   @relation("BoxCreatedBy", fields: [createdById], references: [id])
+  createdById String @map("created_by_id")
+
+  parcels   Parcel[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([originCountry, destCountry])
+  @@map("boxes")
+}
+
+model Parcel {
+  id              String      @id @default(uuid())
+  trackingNumber  String      @unique @map("tracking_number")
+  qrSignature     String      @map("qr_signature")
+
+  box   Box?    @relation(fields: [boxId], references: [id])
+  boxId String? @map("box_id")
+
+  sender      Customer @relation("ParcelSender", fields: [senderId], references: [id])
+  senderId    String   @map("sender_id")
+  recipient   Customer @relation("ParcelRecipient", fields: [recipientId], references: [id])
+  recipientId String   @map("recipient_id")
+
+  category        String
+  description     String?
+  weightKg        Decimal  @map("weight_kg") @db.Decimal(10, 3)
+  declaredValue   Decimal? @map("declared_value") @db.Decimal(12, 2)
+
+  originCountry String @map("origin_country")
+  destCountry   String @map("dest_country")
+
+  priceUsd     Decimal  @map("price_usd") @db.Decimal(12, 2)
+  priceXof     Decimal  @map("price_xof") @db.Decimal(14, 2)
+  exchangeRate Decimal  @map("exchange_rate") @db.Decimal(10, 4)
+
+  currentState ParcelState  @map("current_state") @default(registered)
+  paymentState PaymentState @map("payment_state") @default(pending)
+
+  estimatedDelivery DateTime? @map("estimated_delivery")
+
+  createdBy   User   @relation("ParcelCreatedBy", fields: [createdById], references: [id])
+  createdById String @map("created_by_id")
+
+  events   ParcelEvent[]
+  payments Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([trackingNumber])
+  @@index([currentState])
+  @@index([paymentState])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([boxId])
+  @@index([createdAt])
+  @@map("parcels")
+}
+
+/// Append-only event log for parcels. NEVER modify a row here.
+/// Compensating events are inserted to "undo" mistakes.
+model ParcelEvent {
+  id        String  @id @default(uuid())
+  parcel    Parcel  @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  parcelId  String  @map("parcel_id")
+
+  eventType String  @map("event_type") // 'state_transition' | 'payment' | 'note' | 'photo_uploaded'
+  action    String  // 'scan_in_warehouse', 'cancel', ...
+  fromState ParcelState? @map("from_state")
+  toState   ParcelState? @map("to_state")
+
+  actor   User   @relation(fields: [actorId], references: [id])
+  actorId String @map("actor_id")
+
+  scanned     Boolean  @default(false)
+  geoLocation Json?    @map("geo_location") // { lat: number, lng: number }
+  metadata    Json?    // { photo?: string; reason?: string; signature?: string; boxId?: string }
+
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  @@index([parcelId, occurredAt])
+  @@index([occurredAt])
+  @@index([eventType])
+  @@index([action])
+  @@map("parcel_events")
+}
+
+// ─── Payments ───────────────────────────────────────────────────────────────
+
+model Payment {
+  id        String  @id @default(uuid())
+  parcel    Parcel  @relation(fields: [parcelId], references: [id])
+  parcelId  String  @map("parcel_id")
+
+  amountUsd Decimal @map("amount_usd") @db.Decimal(12, 2)
+  amountXof Decimal @map("amount_xof") @db.Decimal(14, 2)
+  mode      String  // 'cash' | 'mobile_money' | 'bank_transfer' | 'card'
+  status    PaymentState @default(pending)
+  paidAt    DateTime?    @map("paid_at")
+
+  cashAccount   CashAccount? @relation(fields: [cashAccountId], references: [id])
+  cashAccountId String?      @map("cash_account_id")
+
+  recordedBy   User   @relation(fields: [recordedById], references: [id])
+  recordedById String @map("recorded_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([parcelId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ─── Cash management ────────────────────────────────────────────────────────
+
+model CashAccount {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  label     String
+  country   String
+  currency  Currency
+  balance   Decimal  @default(0) @db.Decimal(16, 2)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  operations CashOperation[]
+  payments   Payment[]
+
+  @@index([country])
+  @@map("cash_accounts")
+}
+
+model CashOperation {
+  id            String  @id @default(uuid())
+  account       CashAccount @relation(fields: [accountId], references: [id])
+  accountId     String  @map("account_id")
+  type          CashOpType
+  label         String
+  amount        Decimal @db.Decimal(14, 2)
+  balanceBefore Decimal @map("balance_before") @db.Decimal(16, 2)
+  balanceAfter  Decimal @map("balance_after") @db.Decimal(16, 2)
+  referenceId   String? @map("reference_id") // payment_id, parcel_id, ...
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String @map("created_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([accountId, createdAt])
+  @@map("cash_operations")
+}
+
+// ─── Pricing ────────────────────────────────────────────────────────────────
+
+model PricingRule {
+  id            String    @id @default(uuid())
+  label         String
+  category      String
+  originCountry String    @map("origin_country")
+  destCountry   String    @map("dest_country")
+  basePriceUsd  Decimal   @map("base_price_usd") @db.Decimal(10, 2)
+  perKgUsd      Decimal   @map("per_kg_usd") @db.Decimal(10, 2)
+  active        Boolean   @default(true)
+  validFrom     DateTime  @default(now()) @map("valid_from")
+  validUntil    DateTime? @map("valid_until")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([category, originCountry, destCountry, active])
+  @@map("pricing_rules")
+}
+
+model ExchangeRate {
+  id           String   @id @default(uuid())
+  fromCurrency Currency @map("from_currency")
+  toCurrency   Currency @map("to_currency")
+  rate         Decimal  @db.Decimal(14, 6)
+  validFrom    DateTime @map("valid_from")
+  source       String   // 'manual' | 'api'
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([fromCurrency, toCurrency, validFrom])
+  @@index([fromCurrency, toCurrency])
+  @@map("exchange_rates")
+}
+
+// ─── Audit log (admin actions, separate from parcel_events) ────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?  @map("actor_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  diff      Json?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([actorId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_log")
+}

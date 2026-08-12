@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gsg-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gsg
+      POSTGRES_PASSWORD: gsg_dev_password
+      POSTGRES_DB: gsg_logistique
+    ports:
+      # Host 5433 → container 5432. A native PostgreSQL Windows service already
+      # owns 5432 (IPv4 wildcard bind), which silently conflicts with Docker's
+      # own IPv6 bind on the same port and produces non-deterministic routing.
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gsg -d gsg_logistique"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: gsg-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: gsg-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,28 @@
+{
+  "name": "@gsg/tracking",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3001",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "lint": "eslint . --max-warnings 0",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@gsg/shared-types": "workspace:*",
+    "socket.io-client": "^4.8.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0"
+  },
+  "devDependencies": {
+    "@nuxt/icon": "^1.5.0",
+    "@vite-pwa/nuxt": "^0.10.0",
+    "nuxt": "^3.13.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.5.0"
+  }
+}
