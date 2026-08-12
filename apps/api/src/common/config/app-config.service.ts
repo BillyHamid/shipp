@@ -9,6 +9,11 @@ const EnvSchema = z.object({
 
   DATABASE_URL: z.string().min(1),
 
+  // Hosting platforms (Railway, Render, ...) typically inject a single
+  // connection string instead of separate host/port/password. When present,
+  // REDIS_URL takes precedence over the individual fields below (which stay
+  // as the local-dev default).
+  REDIS_URL: z.string().optional(),
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional(),
@@ -56,6 +61,7 @@ export class AppConfigService {
 
   get redis() {
     return {
+      url: this.env.REDIS_URL,
       host: this.env.REDIS_HOST,
       port: this.env.REDIS_PORT,
       password: this.env.REDIS_PASSWORD,
