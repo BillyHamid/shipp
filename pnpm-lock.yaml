@@ -29,6 +29,9 @@ importers:
       '@gsg/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
+      '@iconify/vue':
+        specifier: ^5.0.1
+        version: 5.0.1(vue@3.5.40(typescript@5.9.3))
       axios:
         specifier: ^1.7.0
         version: 1.18.1
