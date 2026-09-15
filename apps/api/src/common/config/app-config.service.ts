@@ -28,6 +28,8 @@ const EnvSchema = z.object({
   ADMIN_ORIGIN: z.string().url().default('http://localhost:5173'),
   TRACKING_ORIGIN: z.string().url().default('http://localhost:3001'),
   SCAN_ORIGIN: z.string().url().default('http://localhost:5174'),
+  // Comma-separated production origins, for example the three Vercel app URLs.
+  ALLOWED_ORIGINS: z.string().default(''),
   PUBLIC_TRACKING_URL: z.string().url().default('http://localhost:3001'),
 
   EXCHANGE_RATE_USD_XOF: z.coerce.number().positive().default(563),
@@ -82,6 +84,17 @@ export class AppConfigService {
   get adminOrigin(): string { return this.env.ADMIN_ORIGIN }
   get trackingOrigin(): string { return this.env.TRACKING_ORIGIN }
   get scanOrigin(): string { return this.env.SCAN_ORIGIN }
+  get corsOrigins(): string[] {
+    return [...new Set([
+      this.env.ADMIN_ORIGIN,
+      this.env.TRACKING_ORIGIN,
+      this.env.SCAN_ORIGIN,
+      ...this.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean),
+    ])]
+  }
+  isCorsOriginAllowed(origin?: string): boolean {
+    return !origin || this.corsOrigins.includes(origin)
+  }
   get publicTrackingUrl(): string { return this.env.PUBLIC_TRACKING_URL }
 
   get defaultExchangeRateUsdToXof(): number { return this.env.EXCHANGE_RATE_USD_XOF }

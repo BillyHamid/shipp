@@ -20,7 +20,7 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: [config.adminOrigin, config.trackingOrigin, config.scanOrigin],
+    origin: (origin, callback) => callback(null, config.isCorsOriginAllowed(origin)),
     credentials: true,
   })
 
