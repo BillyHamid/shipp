@@ -176,7 +176,7 @@ async function printReceipt() {
       <h1>Votre colis est enregistré</h1><p class="sub">Conservez ce reçu et présentez le QR code lors de toute vérification.</p>
       <div class="route"><div><span>ORIGINE</span><br>${receiptText(p.originCountry)}</div><div>→</div><div style="text-align:right"><span>DESTINATION</span><br>${receiptText(p.destCountry)}</div></div>
       <section class="grid"><div><div class="label">Expéditeur</div><div class="value">${receiptText(p.sender.fullName)}<br><span style="font-weight:normal;color:#806e71">${receiptText(p.sender.phone)}</span></div></div><div><div class="label">Destinataire</div><div class="value">${receiptText(p.recipient.fullName)}<br><span style="font-weight:normal;color:#806e71">${receiptText(p.recipient.phone)}</span></div></div></section>
-      <section class="summary"><div class="meta"><div><div class="label">Contenu</div><div class="value">${receiptText(p.category)}${p.description ? `<br><span style="font-weight:normal;color:#806e71">${receiptText(p.description)}</span>` : ''}</div></div><div><div class="label">Poids</div><div class="value">${receiptText(p.weightKg)} kg</div></div><div><div class="label">Montant</div><div class="value">${receiptText(formatMoney(p.priceUsd, 'USD'))}<br><span style="font-weight:normal;color:#806e71">${receiptText(formatMoney(p.priceXof, 'XOF'))}</span></div></div><div><div class="label">Paiement</div><div class="value">${receiptText(paymentTiming)}<br><span style="font-weight:normal;color:#806e71">${receiptText(p.paymentState === 'paid' ? 'Payé' : 'En attente')}</span></div></div></div>
+      <section class="summary"><div class="meta"><div><div class="label">Contenu</div><div class="value">${receiptText(p.category)}${p.description ? `<br><span style="font-weight:normal;color:#806e71">${receiptText(p.description)}</span>` : ''}<br><span style="font-weight:normal;color:#806e71">Qté : ${receiptText(p.quantity ?? 1)}</span></div></div><div><div class="label">Poids</div><div class="value">${receiptText(p.weightKg)} kg${p.lengthCm && p.widthCm && p.heightCm ? `<br><span style="font-weight:normal;color:#806e71">${receiptText(p.lengthCm)} × ${receiptText(p.widthCm)} × ${receiptText(p.heightCm)} cm</span>` : ''}${p.isFragile ? `<br><span style="font-weight:normal;color:#b4233a">Fragile</span>` : ''}</div></div><div><div class="label">Montant</div><div class="value">${receiptText(formatMoney(p.priceUsd, 'USD'))}<br><span style="font-weight:normal;color:#806e71">${receiptText(formatMoney(p.priceXof, 'XOF'))}</span></div></div><div><div class="label">Paiement</div><div class="value">${receiptText(paymentTiming)}<br><span style="font-weight:normal;color:#806e71">${receiptText(p.paymentState === 'paid' ? 'Payé' : 'En attente')}</span></div></div></div>
         <div class="qr"><img src="${receiptQrUrl}" alt="QR code du colis" /><p>Scannez pour consulter le suivi</p></div></section>
     </main><footer>GSG Logistique · USA ↔ Afrique de l’Ouest<br>Émis le ${receiptText(formatDateTime(new Date().toISOString()))}</footer></article></body></html>`)
     win.document.close()
@@ -271,6 +271,18 @@ onMounted(load)
           <div>
             <p class="label">Poids / Catégorie</p>
             <p class="text-ink-800">{{ parcel.weightKg }} kg · {{ parcel.category }}</p>
+          </div>
+          <div>
+            <p class="label">Contenu / Quantité</p>
+            <p class="text-ink-800">{{ parcel.description || '—' }} <span class="text-ink-400">· {{ parcel.quantity ?? 1 }} unité{{ (parcel.quantity ?? 1) > 1 ? 's' : '' }}</span></p>
+          </div>
+          <div v-if="parcel.declaredValue">
+            <p class="label">Valeur déclarée</p>
+            <p class="text-ink-800">{{ formatMoney(parcel.declaredValue, parcel.declaredValueCurrency || 'USD') }}</p>
+          </div>
+          <div v-if="parcel.lengthCm || parcel.widthCm || parcel.heightCm">
+            <p class="label">Dimensions</p>
+            <p class="text-ink-800">{{ parcel.lengthCm || '—' }} × {{ parcel.widthCm || '—' }} × {{ parcel.heightCm || '—' }} cm <span v-if="parcel.isFragile" class="ml-1 text-brand-600">· Fragile</span></p>
           </div>
           <div>
             <p class="label">Montant</p>

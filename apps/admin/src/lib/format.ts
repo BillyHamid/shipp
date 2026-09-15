@@ -1,6 +1,7 @@
-export function formatMoney(amount: number | string, currency: 'USD' | 'XOF' = 'USD'): string {
+export function formatMoney(amount: number | string, currency: 'USD' | 'XOF' | 'EUR' = 'USD'): string {
   const n = Number(amount)
   if (currency === 'XOF') return `${Math.round(n).toLocaleString('fr-FR')} F CFA`
+  if (currency === 'EUR') return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
   return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`
 }
 

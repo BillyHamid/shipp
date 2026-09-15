@@ -170,8 +170,14 @@ model Parcel {
 
   category        String
   description     String?
+  quantity        Int      @default(1)
   weightKg        Decimal  @map("weight_kg") @db.Decimal(10, 3)
   declaredValue   Decimal? @map("declared_value") @db.Decimal(12, 2)
+  declaredValueCurrency Currency? @map("declared_value_currency")
+  lengthCm        Decimal? @map("length_cm") @db.Decimal(10, 2)
+  widthCm         Decimal? @map("width_cm") @db.Decimal(10, 2)
+  heightCm        Decimal? @map("height_cm") @db.Decimal(10, 2)
+  isFragile       Boolean  @default(false) @map("is_fragile")
 
   originCountry String @map("origin_country")
   destCountry   String @map("dest_country")

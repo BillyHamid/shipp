@@ -37,8 +37,14 @@ const selectedRecipient = ref<CustomerLite | null>(null)
 const form = reactive({
   category: 'OTHER',
   description: '',
+  quantity: 1,
   weightKg: 1,
   declaredValue: null as number | null,
+  declaredValueCurrency: 'USD',
+  lengthCm: null as number | null,
+  widthCm: null as number | null,
+  heightCm: null as number | null,
+  isFragile: false,
   originCountry: 'US',
   destCountry: 'BF',
   paymentTiming: 'at_shipping' as 'at_shipping' | 'at_arrival',
@@ -90,15 +96,25 @@ async function submit() {
     toastError('Sélectionnez un expéditeur et un destinataire')
     return
   }
+  if (form.description.trim().length < 2) {
+    toastError('Indiquez clairement le contenu du colis')
+    return
+  }
   submitting.value = true
   try {
     const res = await api.post('/parcels', {
       senderId: selectedSender.value.id,
       recipientId: selectedRecipient.value.id,
       category: form.category,
-      description: form.description || undefined,
+      description: form.description.trim(),
+      quantity: form.quantity,
       weightKg: form.weightKg,
       declaredValue: form.declaredValue || undefined,
+      declaredValueCurrency: form.declaredValue ? form.declaredValueCurrency : undefined,
+      lengthCm: form.lengthCm || undefined,
+      widthCm: form.widthCm || undefined,
+      heightCm: form.heightCm || undefined,
+      isFragile: form.isFragile,
       originCountry: form.originCountry,
       destCountry: form.destCountry,
       paymentTiming: form.paymentTiming,
@@ -193,8 +209,45 @@ async function submit() {
       </div>
 
       <div>
-        <label class="label">Description (optionnel)</label>
-        <input v-model="form.description" class="input" placeholder="Ex: iPhone 15, vêtements..." />
+        <label class="label">Contenu du colis <span class="text-brand-600">*</span></label>
+        <input v-model="form.description" class="input" required placeholder="Ex : 2 paires de chaussures Nike" />
+        <p class="mt-1.5 text-xs text-ink-400">Ce libellé figurera sur le reçu et facilite le contrôle à l'arrivée.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Quantité <span class="text-brand-600">*</span></label>
+          <input v-model.number="form.quantity" type="number" min="1" max="999" step="1" class="input" />
+        </div>
+        <div>
+          <label class="label">Valeur déclarée</label>
+          <div class="flex gap-2">
+            <input v-model.number="form.declaredValue" type="number" min="0" step="0.01" class="input min-w-0" placeholder="0,00" />
+            <select v-model="form.declaredValueCurrency" class="input w-24 shrink-0">
+              <option value="USD">USD</option>
+              <option value="XOF">FCFA</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-ink-100 bg-ink-50/60 p-4 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-semibold text-ink-800">Dimensions et manutention</p>
+            <p class="text-xs text-ink-400 mt-0.5">Recommandées pour les colis volumineux, fragiles ou hors format.</p>
+          </div>
+          <label class="inline-flex items-center gap-2 text-sm font-medium text-ink-700 cursor-pointer select-none">
+            <input v-model="form.isFragile" type="checkbox" class="size-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500" />
+            Fragile
+          </label>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div><label class="label !mb-1">Longueur (cm)</label><input v-model.number="form.lengthCm" type="number" min="0.1" step="0.1" class="input" placeholder="—" /></div>
+          <div><label class="label !mb-1">Largeur (cm)</label><input v-model.number="form.widthCm" type="number" min="0.1" step="0.1" class="input" placeholder="—" /></div>
+          <div><label class="label !mb-1">Hauteur (cm)</label><input v-model.number="form.heightCm" type="number" min="0.1" step="0.1" class="input" placeholder="—" /></div>
+        </div>
       </div>
 
       <div>
