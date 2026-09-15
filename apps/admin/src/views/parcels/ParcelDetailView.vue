@@ -133,6 +133,62 @@ function printQr() {
   win.onload = () => win.print()
 }
 
+function receiptText(value: unknown): string {
+  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  }[char] ?? char))
+}
+
+async function printReceipt() {
+  if (!parcel.value) return
+  let receiptQrUrl = qrObjectUrl.value
+  let revokeAfterPrint = false
+
+  try {
+    if (!receiptQrUrl) {
+      const res = await api.get(`/parcels/${props.id}/qr`, { responseType: 'blob' })
+      receiptQrUrl = URL.createObjectURL(res.data)
+      revokeAfterPrint = true
+    }
+
+    const win = window.open('', '_blank', 'width=760,height=900')
+    if (!win) {
+      if (revokeAfterPrint && receiptQrUrl) URL.revokeObjectURL(receiptQrUrl)
+      toastError('Autorisez les fenêtres surgissantes pour imprimer le reçu')
+      return
+    }
+
+    const p = parcel.value
+    const paymentTiming = p.paymentTiming === 'at_arrival' ? "À l'arrivée" : "À l'envoi"
+    win.document.write(`<!doctype html><html lang="fr"><head><title>Reçu ${receiptText(p.trackingNumber)}</title><style>
+      @page { size: A4; margin: 16mm; }
+      * { box-sizing: border-box; } body { margin: 0; color: #302426; font-family: Arial, sans-serif; font-size: 12px; }
+      .receipt { max-width: 680px; margin: auto; border: 1px solid #eadfe0; border-radius: 18px; overflow: hidden; }
+      header { background: #3e151b; color: white; padding: 26px 30px; display: flex; justify-content: space-between; gap: 24px; }
+      .brand { font-weight: 800; letter-spacing: .08em; font-size: 18px; } .brand small { display: block; margin-top: 5px; color: #f9b8c0; font-size: 8px; letter-spacing: .18em; }
+      .receipt-label { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #f9b8c0; text-align: right; } .number { font-family: monospace; font-size: 15px; font-weight: bold; margin-top: 6px; }
+      main { padding: 28px 30px; } h1 { font-size: 20px; margin: 0 0 5px; } .sub { color: #806e71; margin: 0 0 23px; }
+      .route { display: flex; align-items: center; justify-content: space-between; padding: 17px; border-radius: 12px; background: #fff2f3; color: #6e1722; font-weight: bold; font-size: 15px; } .route span { font-size: 11px; color: #a56970; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 23px 0; border-bottom: 1px solid #eadfe0; } .label { color: #947d80; font-size: 9px; font-weight: bold; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 5px; } .value { font-size: 13px; font-weight: 600; line-height: 1.45; }
+      .summary { display: grid; grid-template-columns: 1fr 150px; gap: 22px; padding-top: 24px; align-items: center; } .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; } .qr { text-align: center; } .qr img { width: 130px; height: 130px; display: block; margin: auto; } .qr p { margin: 7px 0 0; color: #806e71; font-size: 10px; }
+      footer { padding: 16px 30px; color: #806e71; border-top: 1px solid #eadfe0; font-size: 10px; line-height: 1.5; } @media print { .receipt { border: 0; } }
+    </style></head><body><article class="receipt"><header><div class="brand">GSG<span style="color:#fb7185">.</span><small>GLOBAL SHIPPING GROUP</small></div><div><div class="receipt-label">Reçu d'expédition</div><div class="number">${receiptText(p.trackingNumber)}</div></div></header><main>
+      <h1>Votre colis est enregistré</h1><p class="sub">Conservez ce reçu et présentez le QR code lors de toute vérification.</p>
+      <div class="route"><div><span>ORIGINE</span><br>${receiptText(p.originCountry)}</div><div>→</div><div style="text-align:right"><span>DESTINATION</span><br>${receiptText(p.destCountry)}</div></div>
+      <section class="grid"><div><div class="label">Expéditeur</div><div class="value">${receiptText(p.sender.fullName)}<br><span style="font-weight:normal;color:#806e71">${receiptText(p.sender.phone)}</span></div></div><div><div class="label">Destinataire</div><div class="value">${receiptText(p.recipient.fullName)}<br><span style="font-weight:normal;color:#806e71">${receiptText(p.recipient.phone)}</span></div></div></section>
+      <section class="summary"><div class="meta"><div><div class="label">Contenu</div><div class="value">${receiptText(p.category)}${p.description ? `<br><span style="font-weight:normal;color:#806e71">${receiptText(p.description)}</span>` : ''}</div></div><div><div class="label">Poids</div><div class="value">${receiptText(p.weightKg)} kg</div></div><div><div class="label">Montant</div><div class="value">${receiptText(formatMoney(p.priceUsd, 'USD'))}<br><span style="font-weight:normal;color:#806e71">${receiptText(formatMoney(p.priceXof, 'XOF'))}</span></div></div><div><div class="label">Paiement</div><div class="value">${receiptText(paymentTiming)}<br><span style="font-weight:normal;color:#806e71">${receiptText(p.paymentState === 'paid' ? 'Payé' : 'En attente')}</span></div></div></div>
+        <div class="qr"><img src="${receiptQrUrl}" alt="QR code du colis" /><p>Scannez pour consulter le suivi</p></div></section>
+    </main><footer>GSG Logistique · USA ↔ Afrique de l’Ouest<br>Émis le ${receiptText(formatDateTime(new Date().toISOString()))}</footer></article></body></html>`)
+    win.document.close()
+    win.onload = () => {
+      win.print()
+      if (revokeAfterPrint && receiptQrUrl) window.setTimeout(() => URL.revokeObjectURL(receiptQrUrl!), 1000)
+    }
+  } catch (e: any) {
+    toastError(e.response?.data?.message ?? 'Impossible de générer le reçu')
+  }
+}
+
 async function openPaidModal() {
   selectedCashAccountId.value = ''
   paymentAmount.value = remainingUsd.value
@@ -186,6 +242,10 @@ onMounted(load)
         <button class="btn-secondary" @click="viewQr">
           <Icon icon="ph:qr-code-bold" class="size-4" />
           Voir le QR
+        </button>
+        <button class="btn-primary" @click="printReceipt">
+          <Icon icon="ph:printer-bold" class="size-4" />
+          Imprimer le reçu
         </button>
       </div>
     </div>
