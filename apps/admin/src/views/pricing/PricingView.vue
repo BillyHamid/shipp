@@ -56,12 +56,15 @@ onMounted(load)
 
 <template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-semibold text-slate-900">Tarifs</h1>
-      <button class="btn-primary" @click="showCreate = true">+ Nouveau tarif</button>
+    <div class="page-intro">
+      <div><p class="eyebrow mb-2">Configuration</p><h1 class="page-title">Tarifs</h1><p class="page-description">Définissez les règles de tarification de vos expéditions.</p></div>
+      <button class="btn-primary" @click="showCreate = true">
+        <Icon icon="ph:plus-bold" class="size-4" />
+        Nouveau tarif
+      </button>
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr>
@@ -75,19 +78,25 @@ onMounted(load)
           </tr>
         </thead>
         <tbody>
-          <tr v-for="r in items" :key="r.id" class="hover:bg-slate-50">
-            <td class="table-cell font-medium">{{ r.label }}</td>
+          <tr v-if="items.length === 0">
+            <td colspan="7" class="table-cell text-center text-ink-300 py-10">
+              <Icon icon="ph:tag-bold" class="size-8 mx-auto mb-2 text-ink-200" />
+              Aucun tarif
+            </td>
+          </tr>
+          <tr v-for="r in items" :key="r.id" class="hover:bg-ink-50/60 transition-colors">
+            <td class="table-cell font-medium text-ink-800">{{ r.label }}</td>
             <td class="table-cell">{{ r.category }}</td>
             <td class="table-cell text-xs">{{ countryLabel(r.originCountry) }} → {{ countryLabel(r.destCountry) }}</td>
             <td class="table-cell">{{ formatMoney(r.basePriceUsd, 'USD') }}</td>
             <td class="table-cell">{{ formatMoney(r.perKgUsd, 'USD') }}/kg</td>
             <td class="table-cell">
-              <span class="text-xs px-2 py-0.5 rounded-full" :class="r.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full" :class="r.active ? 'bg-emerald-50 text-emerald-700' : 'bg-ink-100 text-ink-500'">
                 {{ r.active ? 'Actif' : 'Inactif' }}
               </span>
             </td>
             <td class="table-cell">
-              <button v-if="r.active" class="text-red-600 text-sm hover:underline" @click="deactivate(r.id)">Désactiver</button>
+              <button v-if="r.active" class="text-red-600 text-sm font-medium hover:underline" @click="deactivate(r.id)">Désactiver</button>
             </td>
           </tr>
         </tbody>

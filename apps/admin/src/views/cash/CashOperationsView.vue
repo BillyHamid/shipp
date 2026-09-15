@@ -54,12 +54,15 @@ onMounted(() => {
 
 <template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-semibold text-slate-900">Opérations de caisse</h1>
-      <button class="btn-primary" @click="showCreate = true">+ Nouvelle opération</button>
+    <div class="page-intro">
+      <div><p class="eyebrow mb-2">Finance</p><h1 class="page-title">Opérations de caisse</h1><p class="page-description">Consultez et enregistrez les mouvements de caisse.</p></div>
+      <button class="btn-primary" @click="showCreate = true">
+        <Icon icon="ph:plus-bold" class="size-4" />
+        Nouvelle opération
+      </button>
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr>
@@ -74,23 +77,27 @@ onMounted(() => {
         </thead>
         <tbody>
           <tr v-if="items.length === 0">
-            <td colspan="7" class="table-cell text-center text-slate-400 py-8">Aucune opération</td>
+            <td colspan="7" class="table-cell text-center text-ink-300 py-10">
+              <Icon icon="ph:arrows-left-right-bold" class="size-8 mx-auto mb-2 text-ink-200" />
+              Aucune opération
+            </td>
           </tr>
-          <tr v-for="op in items" :key="op.id" class="hover:bg-slate-50">
+          <tr v-for="op in items" :key="op.id" class="hover:bg-ink-50/60 transition-colors">
             <td class="table-cell font-mono text-xs">{{ op.account.code }}</td>
             <td class="table-cell">
               <span
-                class="text-xs px-2 py-0.5 rounded-full"
-                :class="op.type === 'inflow' ? 'bg-emerald-50 text-emerald-700' : op.type === 'outflow' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'"
+                class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+                :class="op.type === 'inflow' ? 'bg-emerald-50 text-emerald-700' : op.type === 'outflow' ? 'bg-red-50 text-red-700' : 'bg-ink-50 text-ink-600'"
               >
+                <Icon :icon="op.type === 'inflow' ? 'ph:arrow-down-left-bold' : op.type === 'outflow' ? 'ph:arrow-up-right-bold' : 'ph:arrows-left-right-bold'" class="size-3" />
                 {{ op.type === 'inflow' ? 'Entrée' : op.type === 'outflow' ? 'Sortie' : 'Transfert' }}
               </span>
             </td>
             <td class="table-cell">{{ op.label }}</td>
-            <td class="table-cell font-medium">{{ formatMoney(op.amount, op.account.currency) }}</td>
-            <td class="table-cell text-slate-500">{{ formatMoney(op.balanceBefore, op.account.currency) }}</td>
-            <td class="table-cell text-slate-500">{{ formatMoney(op.balanceAfter, op.account.currency) }}</td>
-            <td class="table-cell text-xs text-slate-500">{{ formatDateTime(op.createdAt) }}</td>
+            <td class="table-cell font-medium text-ink-800">{{ formatMoney(op.amount, op.account.currency) }}</td>
+            <td class="table-cell text-ink-500">{{ formatMoney(op.balanceBefore, op.account.currency) }}</td>
+            <td class="table-cell text-ink-500">{{ formatMoney(op.balanceAfter, op.account.currency) }}</td>
+            <td class="table-cell text-xs text-ink-500">{{ formatDateTime(op.createdAt) }}</td>
           </tr>
         </tbody>
       </table>

@@ -15,6 +15,7 @@ const STATE_LABELS: Record<string, string> = {
   delivered: 'Livré',
   cancelled: 'Annulé',
   pending: 'En attente',
+  partial: 'Partiel',
   paid: 'Payé',
   refunded: 'Remboursé',
   waived: 'Offert',
@@ -35,6 +36,7 @@ const STATE_COLORS: Record<string, string> = {
   delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   cancelled: 'bg-red-50 text-red-700 ring-red-200',
   pending: 'bg-amber-50 text-amber-700 ring-amber-200',
+  partial: 'bg-orange-50 text-orange-700 ring-orange-200',
   paid: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   refunded: 'bg-red-50 text-red-700 ring-red-200',
   waived: 'bg-slate-100 text-slate-600 ring-slate-200',
@@ -48,7 +50,8 @@ const color = computed(() => STATE_COLORS[props.state] ?? 'bg-slate-100 text-sla
 </script>
 
 <template>
-  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ring-1 whitespace-nowrap" :class="color">
+  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 whitespace-nowrap" :class="color">
+    <span class="size-1.5 rounded-full bg-current opacity-70" />
     {{ label }}
   </span>
 </template>

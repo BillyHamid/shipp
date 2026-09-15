@@ -41,7 +41,13 @@ const form = reactive({
   declaredValue: null as number | null,
   originCountry: 'US',
   destCountry: 'BF',
+  paymentTiming: 'at_shipping' as 'at_shipping' | 'at_arrival',
 })
+
+const PAYMENT_TIMINGS = [
+  { value: 'at_shipping' as const, label: "À l'envoi", icon: 'ph:package-bold', hint: 'Le client paie au dépôt du colis' },
+  { value: 'at_arrival' as const, label: "À l'arrivée", icon: 'ph:hand-coins-bold', hint: 'Le client paie à la récupération' },
+]
 
 const quote = ref<{ priceUsd: number; priceXof: number } | null>(null)
 const submitting = ref(false)
@@ -95,6 +101,7 @@ async function submit() {
       declaredValue: form.declaredValue || undefined,
       originCountry: form.originCountry,
       destCountry: form.destCountry,
+      paymentTiming: form.paymentTiming,
     })
     success('Colis créé')
     router.push({ name: 'parcel-detail', params: { id: res.data.id } })
@@ -108,18 +115,25 @@ async function submit() {
 
 <template>
   <div class="max-w-2xl space-y-6">
-    <h1 class="text-xl font-semibold text-slate-900">Nouveau colis</h1>
+    <div><p class="eyebrow mb-2">Nouvelle expédition</p><h1 class="page-title">Nouveau colis</h1><p class="page-description">Renseignez les contacts et les caractéristiques du colis.</p></div>
 
     <div class="card p-5 space-y-5">
       <!-- Sender -->
       <div class="relative">
         <label class="label">Expéditeur</label>
-        <input v-model="senderQuery" class="input" placeholder="Rechercher un client..." />
-        <ul v-if="senderResults.length" class="absolute z-10 w-full bg-white border border-slate-200 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto">
+        <div class="relative">
+          <input v-model="senderQuery" class="input !pr-9" placeholder="Rechercher un client..." />
+          <Icon
+            v-if="selectedSender && senderQuery === selectedSender.fullName"
+            icon="ph:check-circle-fill"
+            class="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-emerald-500"
+          />
+        </div>
+        <ul v-if="senderResults.length" class="absolute z-10 w-full bg-white border border-ink-100 rounded-xl mt-1 shadow-lg max-h-48 overflow-y-auto">
           <li
             v-for="c in senderResults"
             :key="c.id"
-            class="px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
+            class="px-3 py-2 text-sm hover:bg-ink-50 cursor-pointer transition-colors"
             @click="pickSender(c)"
           >
             {{ c.fullName }} · {{ c.phone }}
@@ -130,12 +144,19 @@ async function submit() {
       <!-- Recipient -->
       <div class="relative">
         <label class="label">Destinataire</label>
-        <input v-model="recipientQuery" class="input" placeholder="Rechercher un client..." />
-        <ul v-if="recipientResults.length" class="absolute z-10 w-full bg-white border border-slate-200 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto">
+        <div class="relative">
+          <input v-model="recipientQuery" class="input !pr-9" placeholder="Rechercher un client..." />
+          <Icon
+            v-if="selectedRecipient && recipientQuery === selectedRecipient.fullName"
+            icon="ph:check-circle-fill"
+            class="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-emerald-500"
+          />
+        </div>
+        <ul v-if="recipientResults.length" class="absolute z-10 w-full bg-white border border-ink-100 rounded-xl mt-1 shadow-lg max-h-48 overflow-y-auto">
           <li
             v-for="c in recipientResults"
             :key="c.id"
-            class="px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
+            class="px-3 py-2 text-sm hover:bg-ink-50 cursor-pointer transition-colors"
             @click="pickRecipient(c)"
           >
             {{ c.fullName }} · {{ c.phone }}
@@ -176,14 +197,39 @@ async function submit() {
         <input v-model="form.description" class="input" placeholder="Ex: iPhone 15, vêtements..." />
       </div>
 
-      <div v-if="quote" class="rounded-lg bg-brand-50 border border-brand-100 p-4 flex items-center justify-between">
-        <span class="text-sm text-brand-700">Prix estimé</span>
-        <span class="font-semibold text-brand-800">
+      <div>
+        <label class="label">Type de paiement</label>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            v-for="t in PAYMENT_TIMINGS"
+            :key="t.value"
+            type="button"
+            class="text-left rounded-xl border p-3 transition-colors"
+            :class="form.paymentTiming === t.value ? 'border-brand-500 bg-brand-50' : 'border-ink-200 hover:bg-ink-50'"
+            @click="form.paymentTiming = t.value"
+          >
+            <div class="flex items-center gap-2">
+              <Icon :icon="t.icon" class="size-4" :class="form.paymentTiming === t.value ? 'text-brand-600' : 'text-ink-400'" />
+              <span class="text-sm font-semibold" :class="form.paymentTiming === t.value ? 'text-brand-800' : 'text-ink-700'">{{ t.label }}</span>
+            </div>
+            <p class="text-xs text-ink-400 mt-1">{{ t.hint }}</p>
+          </button>
+        </div>
+      </div>
+
+      <div v-if="quote" class="rounded-xl bg-brand-50 border border-brand-100 p-4 flex items-center justify-between">
+        <span class="text-sm text-brand-700 flex items-center gap-1.5">
+          <Icon icon="ph:calculator-bold" class="size-4" />
+          Prix estimé
+        </span>
+        <span class="font-display font-bold text-brand-800 tabular-nums">
           {{ formatMoney(quote.priceUsd, 'USD') }} · {{ formatMoney(quote.priceXof, 'XOF') }}
         </span>
       </div>
 
       <button class="btn-primary w-full" :disabled="submitting" @click="submit">
+        <Icon v-if="submitting" icon="ph:spinner-gap-bold" class="size-4 animate-spin" />
+        <Icon v-else icon="ph:package-bold" class="size-4" />
         {{ submitting ? 'Création...' : 'Créer le colis' }}
       </button>
     </div>

@@ -10,23 +10,23 @@ const to = computed(() => Math.min(props.page * props.pageSize, props.total))
 </script>
 
 <template>
-  <div class="flex items-center justify-between px-4 py-3 text-sm text-slate-500">
+  <div class="flex items-center justify-between px-4 py-3 text-sm text-ink-500">
     <p>{{ from }}–{{ to }} sur {{ total }}</p>
-    <div class="flex gap-2">
+    <div class="flex items-center gap-2">
       <button
-        class="btn-secondary h-8 px-3"
+        class="btn-secondary size-8 !px-0"
         :disabled="page <= 1"
         @click="emit('update:page', page - 1)"
       >
-        ←
+        <Icon icon="ph:caret-left-bold" class="size-4" />
       </button>
-      <span class="px-2 py-1 text-slate-600">{{ page }} / {{ totalPages }}</span>
+      <span class="px-1 text-ink-700 font-medium tabular-nums">{{ page }} / {{ totalPages }}</span>
       <button
-        class="btn-secondary h-8 px-3"
+        class="btn-secondary size-8 !px-0"
         :disabled="page >= totalPages"
         @click="emit('update:page', page + 1)"
       >
-        →
+        <Icon icon="ph:caret-right-bold" class="size-4" />
       </button>
     </div>
   </div>

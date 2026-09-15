@@ -66,13 +66,19 @@ onMounted(load)
 <template>
   <div class="space-y-5">
     <div class="flex items-center justify-between flex-wrap gap-3">
-      <h1 class="text-xl font-semibold text-slate-900">Clients</h1>
-      <button class="btn-primary" @click="showCreate = true">+ Nouveau client</button>
+      <div><p class="eyebrow mb-2">Relations clients</p><h1 class="page-title">Clients</h1><p class="page-description">Retrouvez vos expéditeurs, destinataires et leurs historiques.</p></div>
+      <button class="btn-primary" @click="showCreate = true">
+        <Icon icon="ph:plus-bold" class="size-4" />
+        Nouveau client
+      </button>
     </div>
 
-    <input v-model="query" placeholder="Rechercher (nom, téléphone, email)..." class="input max-w-sm" />
+    <div class="relative max-w-sm">
+      <Icon icon="ph:magnifying-glass-bold" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-300" />
+      <input v-model="query" placeholder="Rechercher (nom, téléphone, email)..." class="input !pl-9" />
+    </div>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr>
@@ -84,14 +90,20 @@ onMounted(load)
         </thead>
         <tbody>
           <tr v-if="items.length === 0">
-            <td colspan="4" class="table-cell text-center text-slate-400 py-8">Aucun client</td>
+            <td colspan="4" class="table-cell text-center text-ink-300 py-10">
+              <Icon icon="ph:users-bold" class="size-8 mx-auto mb-2 text-ink-200" />
+              Aucun client
+            </td>
           </tr>
-          <tr v-for="c in items" :key="c.id" class="hover:bg-slate-50">
-            <td class="table-cell font-medium">{{ c.fullName }}</td>
+          <tr v-for="c in items" :key="c.id" class="hover:bg-ink-50/60 transition-colors">
+            <td class="table-cell font-medium text-ink-800">{{ c.fullName }}</td>
             <td class="table-cell">{{ c.phone }}</td>
             <td class="table-cell">{{ countryLabel(c.country) }}</td>
             <td class="table-cell">
-              <button class="text-brand-600 text-sm hover:underline" @click="openHistory(c.id)">Historique</button>
+              <button class="inline-flex items-center gap-1 text-brand-600 text-sm font-medium hover:text-brand-700" @click="openHistory(c.id)">
+                <Icon icon="ph:clock-counter-clockwise-bold" class="size-4" />
+                Historique
+              </button>
             </td>
           </tr>
         </tbody>

@@ -21,6 +21,8 @@ const routes = [
 
       { path: 'cash/accounts', name: 'cash-accounts', component: () => import('./views/cash/CashAccountsView.vue') },
       { path: 'cash/operations', name: 'cash-operations', component: () => import('./views/cash/CashOperationsView.vue') },
+      { path: 'cash/expenses', name: 'cash-expenses', component: () => import('./views/cash/ExpensesView.vue') },
+      { path: 'partners', name: 'partners', component: () => import('./views/cash/PartnersView.vue') },
 
       { path: 'pricing', name: 'pricing', component: () => import('./views/pricing/PricingView.vue') },
       { path: 'users', name: 'users', component: () => import('./views/users/UsersView.vue') },

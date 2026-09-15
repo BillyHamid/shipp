@@ -11,6 +11,7 @@ interface ParcelRow {
   trackingNumber: string
   currentState: string
   paymentState: string
+  paymentTiming: 'at_shipping' | 'at_arrival'
   weightKg: number
   priceUsd: number
   priceXof: number
@@ -28,6 +29,7 @@ const page = ref(1)
 const pageSize = 20
 const query = ref('')
 const stateFilter = ref('')
+const paymentTimingFilter = ref('')
 const loading = ref(false)
 
 const STATES = [
@@ -44,6 +46,12 @@ const STATES = [
   ['cancelled', 'Annulé'],
 ]
 
+const PAYMENT_TIMINGS = [
+  ['', 'Envoi & arrivée'],
+  ['at_shipping', "Paiement à l'envoi"],
+  ['at_arrival', "Paiement à l'arrivée"],
+]
+
 async function load() {
   loading.value = true
   try {
@@ -51,6 +59,7 @@ async function load() {
       params: {
         query: query.value || undefined,
         state: stateFilter.value || undefined,
+        paymentTiming: paymentTimingFilter.value || undefined,
         page: page.value,
         pageSize,
       },
@@ -63,7 +72,7 @@ async function load() {
 }
 
 let searchDebounce: ReturnType<typeof setTimeout>
-watch([query, stateFilter], () => {
+watch([query, stateFilter, paymentTimingFilter], () => {
   page.value = 1
   clearTimeout(searchDebounce)
   searchDebounce = setTimeout(load, 300)
@@ -76,18 +85,27 @@ onMounted(load)
 <template>
   <div class="space-y-5">
     <div class="flex items-center justify-between flex-wrap gap-3">
-      <h1 class="text-xl font-semibold text-slate-900">Colis</h1>
-      <RouterLink :to="{ name: 'parcel-create' }" class="btn-primary">+ Nouveau colis</RouterLink>
+      <div><p class="eyebrow mb-2">Logistique</p><h1 class="page-title">Colis</h1><p class="page-description">Suivez chaque colis, de son enregistrement à sa livraison.</p></div>
+      <RouterLink :to="{ name: 'parcel-create' }" class="btn-primary">
+        <Icon icon="ph:plus-bold" class="size-4" />
+        Nouveau colis
+      </RouterLink>
     </div>
 
     <div class="flex gap-3 flex-wrap">
-      <input v-model="query" placeholder="Rechercher (référence, nom...)" class="input max-w-xs" />
+      <div class="relative max-w-xs w-full">
+        <Icon icon="ph:magnifying-glass-bold" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-300" />
+        <input v-model="query" placeholder="Rechercher (référence, nom...)" class="input !pl-9" />
+      </div>
       <select v-model="stateFilter" class="input max-w-xs">
         <option v-for="[value, label] in STATES" :key="value" :value="value">{{ label }}</option>
       </select>
+      <select v-model="paymentTimingFilter" class="input max-w-xs">
+        <option v-for="[value, label] in PAYMENT_TIMINGS" :key="value" :value="value">{{ label }}</option>
+      </select>
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead>
@@ -104,15 +122,20 @@ onMounted(load)
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="8" class="table-cell text-center text-slate-400 py-8">Chargement...</td>
+              <td colspan="8" class="table-cell text-center text-ink-300 py-10">
+                <Icon icon="ph:spinner-gap-bold" class="size-5 animate-spin inline" />
+              </td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td colspan="8" class="table-cell text-center text-slate-400 py-8">Aucun colis trouvé</td>
+              <td colspan="8" class="table-cell text-center text-ink-300 py-10">
+                <Icon icon="ph:package-bold" class="size-8 mx-auto mb-2 text-ink-200" />
+                Aucun colis trouvé
+              </td>
             </tr>
             <tr
               v-for="p in items"
               :key="p.id"
-              class="hover:bg-slate-50 cursor-pointer"
+              class="hover:bg-ink-50/60 cursor-pointer transition-colors"
               @click="$router.push({ name: 'parcel-detail', params: { id: p.id } })"
             >
               <td class="table-cell font-mono font-medium text-slate-800">{{ p.trackingNumber }}</td>
@@ -124,7 +147,13 @@ onMounted(load)
                 <div class="text-xs text-slate-400">{{ formatMoney(p.priceXof, 'XOF') }}</div>
               </td>
               <td class="table-cell"><StateBadge :state="p.currentState" /></td>
-              <td class="table-cell"><StateBadge :state="p.paymentState" /></td>
+              <td class="table-cell">
+                <StateBadge :state="p.paymentState" />
+                <div class="flex items-center gap-1 text-[11px] text-ink-400 mt-1">
+                  <Icon :icon="p.paymentTiming === 'at_arrival' ? 'ph:hand-coins-bold' : 'ph:package-bold'" class="size-3" />
+                  {{ p.paymentTiming === 'at_arrival' ? "À l'arrivée" : "À l'envoi" }}
+                </div>
+              </td>
               <td class="table-cell text-xs text-slate-500">{{ formatDateTime(p.createdAt) }}</td>
             </tr>
           </tbody>

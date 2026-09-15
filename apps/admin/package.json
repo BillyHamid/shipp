@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gsg/shared-types": "workspace:*",
+    "@iconify/vue": "^5.0.1",
     "axios": "^1.7.0",
     "chart.js": "^4.4.0",
     "pinia": "^2.2.0",

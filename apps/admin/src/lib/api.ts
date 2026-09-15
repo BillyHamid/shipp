@@ -9,6 +9,9 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
+  // The free ngrok plan places an HTML warning in front of browser traffic.
+  // Mark API calls explicitly so staging clients receive JSON from the API.
+  if (API_BASE_URL.includes('.ngrok-free.dev')) config.headers['ngrok-skip-browser-warning'] = '1'
   const auth = useAuthStore()
   if (auth.accessToken) config.headers.Authorization = `Bearer ${auth.accessToken}`
   return config

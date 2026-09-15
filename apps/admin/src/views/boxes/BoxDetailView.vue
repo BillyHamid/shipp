@@ -42,45 +42,51 @@ onMounted(load)
 </script>
 
 <template>
-  <div v-if="loading" class="text-center text-slate-400 py-12">Chargement...</div>
+  <div v-if="loading" class="flex justify-center py-16">
+    <Icon icon="ph:spinner-gap-bold" class="size-6 animate-spin text-ink-300" />
+  </div>
 
   <div v-else-if="box" class="space-y-6">
     <div class="flex items-start justify-between flex-wrap gap-3">
       <div>
-        <p class="text-xs text-slate-400">Référence BOX</p>
-        <h1 class="text-2xl font-mono font-bold text-slate-900">{{ box.reference }}</h1>
+        <p class="text-xs font-semibold text-ink-500 uppercase tracking-wide">Référence BOX</p>
+        <h1 class="text-2xl font-mono font-bold text-ink-900 mt-0.5">{{ box.reference }}</h1>
       </div>
       <StateBadge :state="box.status" />
     </div>
 
-    <div class="card p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+    <div class="card p-5 grid grid-cols-2 sm:grid-cols-4 gap-5 text-sm">
       <div>
         <p class="label">Type</p>
-        <p class="text-slate-800">{{ box.type }}</p>
+        <p class="text-ink-800 font-medium">{{ box.type }}</p>
       </div>
       <div>
         <p class="label">Capacité</p>
-        <p class="text-slate-800">{{ box.capacityKg }} kg</p>
+        <p class="text-ink-800 font-medium">{{ box.capacityKg }} kg</p>
       </div>
       <div>
         <p class="label">Trajet</p>
-        <p class="text-slate-800">{{ box.originCountry }} → {{ box.destCountry }}</p>
+        <p class="text-ink-800 font-medium">{{ box.originCountry }} → {{ box.destCountry }}</p>
       </div>
       <div>
         <p class="label">Colis</p>
-        <p class="text-slate-800">{{ box.parcels?.length ?? 0 }}</p>
+        <p class="text-ink-800 font-medium">{{ box.parcels?.length ?? 0 }}</p>
       </div>
     </div>
 
     <div class="flex gap-3">
-      <button v-if="box.status === 'open'" class="btn-primary" @click="dispatch">✈️ Expédier la BOX</button>
+      <button v-if="box.status === 'open'" class="btn-primary" @click="dispatch">
+        <Icon icon="ph:airplane-tilt-bold" class="size-4" />
+        Expédier la BOX
+      </button>
       <button v-if="box.status === 'shipped' || box.status === 'in_transit'" class="btn-primary" @click="markArrived">
-        🛬 Marquer arrivée
+        <Icon icon="ph:map-pin-bold" class="size-4" />
+        Marquer arrivée
       </button>
     </div>
 
     <div class="card overflow-hidden">
-      <div class="px-5 py-3 border-b border-slate-100 font-medium text-slate-700">Colis dans cette BOX</div>
+      <div class="px-5 py-3 border-b border-ink-50 font-display font-bold text-ink-900">Colis dans cette BOX</div>
       <table class="w-full">
         <thead>
           <tr>
@@ -92,12 +98,12 @@ onMounted(load)
         </thead>
         <tbody>
           <tr v-if="!box.parcels?.length">
-            <td colspan="4" class="table-cell text-center text-slate-400 py-6">Aucun colis dans cette BOX</td>
+            <td colspan="4" class="table-cell text-center text-ink-300 py-8">Aucun colis dans cette BOX</td>
           </tr>
           <tr
             v-for="p in box.parcels"
             :key="p.id"
-            class="hover:bg-slate-50 cursor-pointer"
+            class="hover:bg-ink-50/60 cursor-pointer transition-colors"
             @click="$router.push({ name: 'parcel-detail', params: { id: p.id } })"
           >
             <td class="table-cell font-mono">{{ p.trackingNumber }}</td>

@@ -43,10 +43,12 @@ async function sendSms() {
 <template>
   <div class="flex gap-2">
     <button class="btn-secondary !bg-emerald-50 !text-emerald-700 hover:!bg-emerald-100" :disabled="loading !== null" @click="sendWhatsapp">
-      💬 {{ loading === 'whatsapp' ? '...' : 'WhatsApp' }}
+      <Icon icon="ph:whatsapp-logo-bold" class="size-4" />
+      {{ loading === 'whatsapp' ? '...' : 'WhatsApp' }}
     </button>
     <button class="btn-secondary" :disabled="loading !== null" @click="sendSms">
-      ✉️ {{ loading === 'sms' ? 'Envoi...' : 'SMS' }}
+      <Icon icon="ph:chat-circle-text-bold" class="size-4" />
+      {{ loading === 'sms' ? 'Envoi...' : 'SMS' }}
     </button>
   </div>
 </template>

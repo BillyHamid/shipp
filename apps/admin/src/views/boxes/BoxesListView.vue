@@ -46,12 +46,15 @@ onMounted(load)
 
 <template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-semibold text-slate-900">BOX</h1>
-      <button class="btn-primary" @click="showCreate = true">+ Nouvelle BOX</button>
+    <div class="page-intro">
+      <div><p class="eyebrow mb-2">Expéditions</p><h1 class="page-title">BOX</h1><p class="page-description">Organisez vos regroupements Express et Cargo.</p></div>
+      <button class="btn-primary" @click="showCreate = true">
+        <Icon icon="ph:plus-bold" class="size-4" />
+        Nouvelle BOX
+      </button>
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr>
@@ -65,10 +68,16 @@ onMounted(load)
           </tr>
         </thead>
         <tbody>
+          <tr v-if="items.length === 0">
+            <td colspan="7" class="table-cell text-center text-ink-300 py-10">
+              <Icon icon="ph:cube-bold" class="size-8 mx-auto mb-2 text-ink-200" />
+              Aucune BOX
+            </td>
+          </tr>
           <tr
             v-for="b in items"
             :key="b.id"
-            class="hover:bg-slate-50 cursor-pointer"
+            class="hover:bg-ink-50/60 cursor-pointer transition-colors"
             @click="router.push({ name: 'box-detail', params: { id: b.id } })"
           >
             <td class="table-cell font-mono font-medium">{{ b.reference }}</td>
