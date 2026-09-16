@@ -47,7 +47,12 @@ onMounted(load)
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div v-for="acc in items" :key="acc.id" class="card p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      <RouterLink
+        v-for="acc in items"
+        :key="acc.id"
+        :to="{ name: 'cash-operations', query: { accountId: acc.id } }"
+        class="card p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group"
+      >
         <div class="flex items-center justify-between mb-3">
           <div class="size-10 rounded-xl bg-brand-50 flex items-center justify-center">
             <Icon icon="ph:wallet-bold" class="size-5 text-brand-600" />
@@ -57,7 +62,10 @@ onMounted(load)
         <p class="font-medium text-ink-800">{{ acc.label }}</p>
         <p class="text-xs text-ink-500 mb-3 font-mono">{{ acc.code }} · {{ countryLabel(acc.country) }}</p>
         <p class="text-2xl font-display font-extrabold text-ink-900 tabular-nums">{{ formatMoney(acc.balance, acc.currency) }}</p>
-      </div>
+        <p class="mt-4 flex items-center gap-1.5 text-xs font-semibold text-brand-600 opacity-80 group-hover:opacity-100">
+          Voir l'historique <Icon icon="ph:arrow-right-bold" class="size-3" />
+        </p>
+      </RouterLink>
     </div>
 
     <Modal v-if="showCreate" title="Nouveau compte de caisse" @close="showCreate = false">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from '../../lib/api.js'
 import { useToast } from '../../composables/useToast.js'
 import { formatDateTime, formatMoney } from '../../lib/format.js'
@@ -7,19 +8,23 @@ import Modal from '../../components/ui/Modal.vue'
 import Pagination from '../../components/ui/Pagination.vue'
 
 const { success, error: toastError } = useToast()
+const route = useRoute()
 
 const items = ref<any[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = 20
 const accounts = ref<any[]>([])
+const accountFilter = ref(String(route.query.accountId ?? ''))
 const showCreate = ref(false)
 
 const form = reactive({ accountId: '', type: 'inflow', label: '', amount: 0 })
 const submitting = ref(false)
 
 async function load() {
-  const res = await api.get('/cash/operations', { params: { page: page.value, pageSize } })
+  const res = await api.get('/cash/operations', {
+    params: { accountId: accountFilter.value || undefined, page: page.value, pageSize },
+  })
   items.value = res.data.items
   total.value = res.data.total
 }
@@ -50,6 +55,11 @@ onMounted(() => {
   load()
   loadAccounts()
 })
+
+watch(accountFilter, () => {
+  page.value = 1
+  load()
+})
 </script>
 
 <template>
@@ -60,6 +70,17 @@ onMounted(() => {
         <Icon icon="ph:plus-bold" class="size-4" />
         Nouvelle opération
       </button>
+    </div>
+
+    <div class="flex items-center gap-3 flex-wrap">
+      <label class="text-sm font-medium text-ink-600" for="cash-account-filter">Historique de</label>
+      <select id="cash-account-filter" v-model="accountFilter" class="input max-w-sm">
+        <option value="">Toutes les caisses</option>
+        <option v-for="account in accounts" :key="account.id" :value="account.id">
+          {{ account.code }} — {{ account.label }}
+        </option>
+      </select>
+      <span v-if="accountFilter" class="text-xs text-ink-400">Solde avant et après chaque mouvement.</span>
     </div>
 
     <div class="card overflow-x-auto">
