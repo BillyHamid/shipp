@@ -67,6 +67,16 @@ export const useScanStore = defineStore('scan', {
       }
     },
 
+    async recordCondition(payload: { condition: string; note?: string; photo?: string }): Promise<{ success: boolean; message?: string }> {
+      if (!this.parcel) return { success: false, message: 'Aucun colis chargé' }
+      try {
+        await api.post(`/parcels/${this.parcel.id}/condition`, payload)
+        return { success: true }
+      } catch (e: unknown) {
+        return { success: false, message: this.extractMessage(e) }
+      }
+    },
+
     reset() {
       this.parcel = null
       this.allowedActions = []

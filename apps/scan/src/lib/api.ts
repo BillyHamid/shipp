@@ -9,6 +9,8 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
+  // Required only for staging APIs exposed by a free ngrok tunnel.
+  if (API_BASE_URL.includes('.ngrok-free.dev')) config.headers['ngrok-skip-browser-warning'] = '1'
   const auth = useAuthStore()
   if (auth.accessToken) {
     config.headers.Authorization = `Bearer ${auth.accessToken}`

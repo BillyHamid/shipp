@@ -15,6 +15,7 @@ export class ListParcelsHandler implements IQueryHandler<ListParcelsQuery> {
     const where: Prisma.ParcelWhereInput = {
       ...(params.state && { currentState: params.state }),
       ...(params.paymentState && { paymentState: params.paymentState }),
+      ...(params.paymentTiming && { paymentTiming: params.paymentTiming }),
       ...(params.boxId && { boxId: params.boxId }),
       ...((params.dateFrom || params.dateTo) && {
         createdAt: {

@@ -1,9 +1,10 @@
-import type { ParcelState, PaymentState } from '@gsg/shared-types/domain'
+import type { ParcelState, PaymentState, PaymentTiming } from '@gsg/shared-types/domain'
 
 export interface ListParcelsParams {
   query?: string
   state?: ParcelState
   paymentState?: PaymentState
+  paymentTiming?: PaymentTiming
   boxId?: string
   dateFrom?: Date
   dateTo?: Date

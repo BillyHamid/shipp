@@ -13,6 +13,7 @@ import {
   PARCEL_STATES,
   PAYMENT_MODES,
   PAYMENT_STATES,
+  PAYMENT_TIMINGS,
   ROLES,
 } from './domain.js'
 
@@ -77,6 +78,7 @@ export const CreateParcelDtoSchema = z.object({
   isFragile: z.boolean().default(false),
   originCountry: CountryCodeSchema,
   destCountry: CountryCodeSchema,
+  paymentTiming: z.enum(PAYMENT_TIMINGS).default('at_shipping'),
 })
 export type CreateParcelDto = z.infer<typeof CreateParcelDtoSchema>
 
@@ -121,6 +123,15 @@ export const CreateCashOperationDtoSchema = z.object({
   referenceId: z.string().optional().nullable(),
 })
 export type CreateCashOperationDto = z.infer<typeof CreateCashOperationDtoSchema>
+
+// ─── Partner profit-sharing ─────────────────────────────────────────────────
+
+export const CreateExpenseDtoSchema = z.object({
+  label: z.string().min(2).max(255),
+  amount: MoneySchema.refine((v) => v > 0, 'Amount must be > 0'),
+  cashAccountId: z.string().uuid(),
+})
+export type CreateExpenseDto = z.infer<typeof CreateExpenseDtoSchema>
 
 // ─── Pricing ─────────────────────────────────────────────────────────────────
 

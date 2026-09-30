@@ -20,9 +20,14 @@ function onSubmit() {
 </script>
 
 <template>
-  <form class="space-y-3" @submit.prevent="onSubmit">
+  <form class="space-y-3" action="/p" method="get" @submit.prevent="onSubmit">
+    <label for="tracking-number" class="sr-only">Numéro de suivi</label>
     <input
+      id="tracking-number"
+      :aria-invalid="!!error"
+      :aria-describedby="error ? 'tracking-error' : undefined"
       v-model="value"
+      name="trackingNumber"
       type="text"
       placeholder="ex: GSG-US-A4F2K9P1"
       autocapitalize="characters"
@@ -31,9 +36,9 @@ function onSubmit() {
       spellcheck="false"
       class="input-tracking"
     />
-    <p v-if="error" class="text-sm text-red-500 px-1">{{ error }}</p>
+    <p id="tracking-error" role="alert" v-if="error" class="text-sm text-red-500 px-1">{{ error }}</p>
     <button type="submit" class="btn-primary">
-      <Icon name="ph:magnifying-glass-bold" size="20" />
+      <TrackIcon name="ph:magnifying-glass-bold" size="20" />
       Suivre mon colis
     </button>
   </form>

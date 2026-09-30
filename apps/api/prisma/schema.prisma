@@ -27,9 +27,15 @@ enum ParcelState {
 
 enum PaymentState {
   pending
+  partial
   paid
   refunded
   waived
+}
+
+enum PaymentTiming {
+  at_shipping
+  at_arrival
 }
 
 enum BoxStatus {
@@ -51,6 +57,11 @@ enum CashOpType {
   transfer
 }
 
+enum PartnerShareType {
+  revenue
+  expense
+}
+
 enum Currency {
   USD
   XOF
@@ -63,7 +74,7 @@ model Role {
   id          String   @id @default(uuid())
   name        String   @unique
   label       String
-  permissions Json     // string[]  — see @gsg/shared-types/permissions
+  permissions Json // string[]  — see @gsg/shared-types/permissions
   createdAt   DateTime @default(now())
   users       User[]
 
@@ -71,39 +82,40 @@ model Role {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  fullName     String   @map("full_name")
-  role         Role     @relation(fields: [roleId], references: [id])
-  roleId       String   @map("role_id")
-  country      String?  // 'US' | 'BF' | null
-  active       Boolean  @default(true)
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name")
+  role         Role      @relation(fields: [roleId], references: [id])
+  roleId       String    @map("role_id")
+  country      String? // 'US' | 'BF' | null
+  active       Boolean   @default(true)
   lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  createdBoxes  Box[]            @relation("BoxCreatedBy")
+  refreshTokens  RefreshToken[]
+  createdBoxes   Box[]           @relation("BoxCreatedBy")
   createdParcels Parcel[]        @relation("ParcelCreatedBy")
-  parcelEvents  ParcelEvent[]
-  payments      Payment[]
-  cashOps       CashOperation[]
+  parcelEvents   ParcelEvent[]
+  payments       Payment[]
+  cashOps        CashOperation[]
+  expenses       Expense[]
 
   @@index([active])
   @@map("users")
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String   @map("user_id")
-  tokenHash String   @unique @map("token_hash")
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(uuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
   revokedAt DateTime? @map("revoked_at")
-  userAgent String?  @map("user_agent")
-  ipAddress String?  @map("ip_address")
-  createdAt DateTime @default(now()) @map("created_at")
+  userAgent String?   @map("user_agent")
+  ipAddress String?   @map("ip_address")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   @@index([userId])
   @@index([expiresAt])
@@ -156,9 +168,9 @@ model Box {
 }
 
 model Parcel {
-  id              String      @id @default(uuid())
-  trackingNumber  String      @unique @map("tracking_number")
-  qrSignature     String      @map("qr_signature")
+  id             String @id @default(uuid())
+  trackingNumber String @unique @map("tracking_number")
+  qrSignature    String @map("qr_signature")
 
   box   Box?    @relation(fields: [boxId], references: [id])
   boxId String? @map("box_id")
@@ -168,26 +180,27 @@ model Parcel {
   recipient   Customer @relation("ParcelRecipient", fields: [recipientId], references: [id])
   recipientId String   @map("recipient_id")
 
-  category        String
-  description     String?
-  quantity        Int      @default(1)
-  weightKg        Decimal  @map("weight_kg") @db.Decimal(10, 3)
-  declaredValue   Decimal? @map("declared_value") @db.Decimal(12, 2)
+  category      String
+  description   String?
+  quantity      Int      @default(1)
+  weightKg      Decimal  @map("weight_kg") @db.Decimal(10, 3)
+  declaredValue Decimal? @map("declared_value") @db.Decimal(12, 2)
   declaredValueCurrency Currency? @map("declared_value_currency")
-  lengthCm        Decimal? @map("length_cm") @db.Decimal(10, 2)
-  widthCm         Decimal? @map("width_cm") @db.Decimal(10, 2)
-  heightCm        Decimal? @map("height_cm") @db.Decimal(10, 2)
-  isFragile       Boolean  @default(false) @map("is_fragile")
+  lengthCm      Decimal? @map("length_cm") @db.Decimal(10, 2)
+  widthCm       Decimal? @map("width_cm") @db.Decimal(10, 2)
+  heightCm      Decimal? @map("height_cm") @db.Decimal(10, 2)
+  isFragile     Boolean  @default(false) @map("is_fragile")
 
   originCountry String @map("origin_country")
   destCountry   String @map("dest_country")
 
-  priceUsd     Decimal  @map("price_usd") @db.Decimal(12, 2)
-  priceXof     Decimal  @map("price_xof") @db.Decimal(14, 2)
-  exchangeRate Decimal  @map("exchange_rate") @db.Decimal(10, 4)
+  priceUsd     Decimal @map("price_usd") @db.Decimal(12, 2)
+  priceXof     Decimal @map("price_xof") @db.Decimal(14, 2)
+  exchangeRate Decimal @map("exchange_rate") @db.Decimal(10, 4)
 
-  currentState ParcelState  @map("current_state") @default(registered)
-  paymentState PaymentState @map("payment_state") @default(pending)
+  currentState  ParcelState   @default(registered) @map("current_state")
+  paymentState  PaymentState  @default(pending) @map("payment_state")
+  paymentTiming PaymentTiming @default(at_shipping) @map("payment_timing")
 
   estimatedDelivery DateTime? @map("estimated_delivery")
 
@@ -203,6 +216,7 @@ model Parcel {
   @@index([trackingNumber])
   @@index([currentState])
   @@index([paymentState])
+  @@index([paymentTiming])
   @@index([senderId])
   @@index([recipientId])
   @@index([boxId])
@@ -213,21 +227,21 @@ model Parcel {
 /// Append-only event log for parcels. NEVER modify a row here.
 /// Compensating events are inserted to "undo" mistakes.
 model ParcelEvent {
-  id        String  @id @default(uuid())
-  parcel    Parcel  @relation(fields: [parcelId], references: [id], onDelete: Cascade)
-  parcelId  String  @map("parcel_id")
+  id       String @id @default(uuid())
+  parcel   Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  parcelId String @map("parcel_id")
 
-  eventType String  @map("event_type") // 'state_transition' | 'payment' | 'note' | 'photo_uploaded'
-  action    String  // 'scan_in_warehouse', 'cancel', ...
+  eventType String       @map("event_type") // 'state_transition' | 'payment' | 'note' | 'photo_uploaded'
+  action    String // 'scan_in_warehouse', 'cancel', ...
   fromState ParcelState? @map("from_state")
   toState   ParcelState? @map("to_state")
 
   actor   User   @relation(fields: [actorId], references: [id])
   actorId String @map("actor_id")
 
-  scanned     Boolean  @default(false)
-  geoLocation Json?    @map("geo_location") // { lat: number, lng: number }
-  metadata    Json?    // { photo?: string; reason?: string; signature?: string; boxId?: string }
+  scanned     Boolean @default(false)
+  geoLocation Json?   @map("geo_location") // { lat: number, lng: number }
+  metadata    Json? // { photo?: string; reason?: string; signature?: string; boxId?: string }
 
   occurredAt DateTime @default(now()) @map("occurred_at")
 
@@ -241,13 +255,13 @@ model ParcelEvent {
 // ─── Payments ───────────────────────────────────────────────────────────────
 
 model Payment {
-  id        String  @id @default(uuid())
-  parcel    Parcel  @relation(fields: [parcelId], references: [id])
-  parcelId  String  @map("parcel_id")
+  id       String @id @default(uuid())
+  parcel   Parcel @relation(fields: [parcelId], references: [id])
+  parcelId String @map("parcel_id")
 
-  amountUsd Decimal @map("amount_usd") @db.Decimal(12, 2)
-  amountXof Decimal @map("amount_xof") @db.Decimal(14, 2)
-  mode      String  // 'cash' | 'mobile_money' | 'bank_transfer' | 'card'
+  amountUsd Decimal      @map("amount_usd") @db.Decimal(12, 2)
+  amountXof Decimal      @map("amount_xof") @db.Decimal(14, 2)
+  mode      String // 'cash' | 'mobile_money' | 'bank_transfer' | 'card'
   status    PaymentState @default(pending)
   paidAt    DateTime?    @map("paid_at")
 
@@ -259,6 +273,8 @@ model Payment {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  shares PartnerShare[]
 
   @@index([parcelId])
   @@index([status])
@@ -280,29 +296,94 @@ model CashAccount {
 
   operations CashOperation[]
   payments   Payment[]
+  expenses   Expense[]
 
   @@index([country])
   @@map("cash_accounts")
 }
 
 model CashOperation {
-  id            String  @id @default(uuid())
+  id            String      @id @default(uuid())
   account       CashAccount @relation(fields: [accountId], references: [id])
-  accountId     String  @map("account_id")
+  accountId     String      @map("account_id")
   type          CashOpType
   label         String
-  amount        Decimal @db.Decimal(14, 2)
-  balanceBefore Decimal @map("balance_before") @db.Decimal(16, 2)
-  balanceAfter  Decimal @map("balance_after") @db.Decimal(16, 2)
-  referenceId   String? @map("reference_id") // payment_id, parcel_id, ...
+  amount        Decimal     @db.Decimal(14, 2)
+  balanceBefore Decimal     @map("balance_before") @db.Decimal(16, 2)
+  balanceAfter  Decimal     @map("balance_after") @db.Decimal(16, 2)
+  referenceId   String?     @map("reference_id") // payment_id, parcel_id, ...
 
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String @map("created_by_id")
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  expense Expense?
+
   @@index([accountId, createdAt])
   @@map("cash_operations")
+}
+
+// ─── Partner profit-sharing ─────────────────────────────────────────────────
+// Every parcel payment and every posted expense is split 50/50 between the
+// two operating partners, independent of which physical CashAccount the
+// money actually moves through. PartnerShare is an append-only ledger —
+// nothing here is ever edited, only summed per period for the partner report.
+
+model Partner {
+  id        String   @id @default(uuid())
+  code      String   @unique // stable key ('USA' | 'BF'), not a display label
+  label     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  shares PartnerShare[]
+
+  @@map("partners")
+}
+
+model Expense {
+  id       String   @id @default(uuid())
+  label    String
+  amount   Decimal  @db.Decimal(14, 2)
+  currency Currency
+
+  // The expense is a real cash outflow, not just a bookkeeping entry —
+  // it always debits an actual CashAccount via a CashOperation.
+  cashAccount     CashAccount   @relation(fields: [cashAccountId], references: [id])
+  cashAccountId   String        @map("cash_account_id")
+  cashOperation   CashOperation @relation(fields: [cashOperationId], references: [id])
+  cashOperationId String        @unique @map("cash_operation_id")
+
+  postedBy   User   @relation(fields: [postedById], references: [id])
+  postedById String @map("posted_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  shares PartnerShare[]
+
+  @@index([cashAccountId])
+  @@map("expenses")
+}
+
+model PartnerShare {
+  id        String           @id @default(uuid())
+  partner   Partner          @relation(fields: [partnerId], references: [id])
+  partnerId String           @map("partner_id")
+  type      PartnerShareType
+  amount    Decimal          @db.Decimal(14, 2) // this partner's half, already divided
+  currency  Currency
+  label     String
+
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+  paymentId String?  @map("payment_id")
+  expense   Expense? @relation(fields: [expenseId], references: [id])
+  expenseId String?  @map("expense_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([partnerId, createdAt])
+  @@map("partner_shares")
 }
 
 // ─── Pricing ────────────────────────────────────────────────────────────────
@@ -331,7 +412,7 @@ model ExchangeRate {
   toCurrency   Currency @map("to_currency")
   rate         Decimal  @db.Decimal(14, 6)
   validFrom    DateTime @map("valid_from")
-  source       String   // 'manual' | 'api'
+  source       String // 'manual' | 'api'
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@unique([fromCurrency, toCurrency, validFrom])

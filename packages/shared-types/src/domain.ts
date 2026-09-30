@@ -42,11 +42,12 @@ export const PARCEL_STATE_LABELS: Record<ParcelState, string> = {
 
 // ─── Payment state ───────────────────────────────────────────────────────────
 
-export const PAYMENT_STATES = ['pending', 'paid', 'refunded', 'waived'] as const
+export const PAYMENT_STATES = ['pending', 'partial', 'paid', 'refunded', 'waived'] as const
 export type PaymentState = (typeof PAYMENT_STATES)[number]
 
 export const PAYMENT_STATE_LABELS: Record<PaymentState, string> = {
   pending: 'En attente',
+  partial: 'Partiel',
   paid: 'Payé',
   refunded: 'Remboursé',
   waived: 'Offert',
@@ -54,6 +55,18 @@ export const PAYMENT_STATE_LABELS: Record<PaymentState, string> = {
 
 export const PAYMENT_MODES = ['cash', 'mobile_money', 'bank_transfer', 'card'] as const
 export type PaymentMode = (typeof PAYMENT_MODES)[number]
+
+// When in the parcel's journey the customer pays — at drop-off (prepaid) or
+// at pickup (cash on delivery). Purely informational/filterable; it does not
+// change how the partner revenue split works (that's tied to the actual
+// payment event, whenever it happens).
+export const PAYMENT_TIMINGS = ['at_shipping', 'at_arrival'] as const
+export type PaymentTiming = (typeof PAYMENT_TIMINGS)[number]
+
+export const PAYMENT_TIMING_LABELS: Record<PaymentTiming, string> = {
+  at_shipping: "Paiement à l'envoi",
+  at_arrival: "Paiement à l'arrivée",
+}
 
 // ─── Parcel transitions (state machine vocabulary) ───────────────────────────
 

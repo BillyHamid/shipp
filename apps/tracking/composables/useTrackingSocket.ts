@@ -9,6 +9,7 @@ import { io, type Socket } from 'socket.io-client'
 export function useTrackingSocket(trackingNumber: string, onUpdate: (state: string) => void) {
   const config = useRuntimeConfig()
   let socket: Socket | null = null
+  const connected = ref(false)
 
   onMounted(() => {
     socket = io(`${config.public.wsUrl}/track`, {
@@ -16,7 +17,10 @@ export function useTrackingSocket(trackingNumber: string, onUpdate: (state: stri
       withCredentials: false,
     })
 
+    socket.on('disconnect', () => { connected.value = false })
+    socket.on('connect_error', () => { connected.value = false })
     socket.on('connect', () => {
+      connected.value = true
       socket?.emit('track:subscribe', { trackingNumber })
     })
 
@@ -31,4 +35,5 @@ export function useTrackingSocket(trackingNumber: string, onUpdate: (state: stri
     socket?.emit('track:unsubscribe', { trackingNumber })
     socket?.disconnect()
   })
+  return { connected }
 }

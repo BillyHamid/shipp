@@ -19,6 +19,7 @@ import { ParcelsModule } from './modules/parcels/parcels.module.js'
 import { ScanModule } from './modules/scan/scan.module.js'
 import { PublicTrackingModule } from './modules/public-tracking/public-tracking.module.js'
 import { CashModule } from './modules/cash/cash.module.js'
+import { PartnersModule } from './modules/partners/partners.module.js'
 import { RealtimeModule } from './modules/realtime/realtime.module.js'
 import { NotificationsModule } from './modules/notifications/notifications.module.js'
 import { DashboardModule } from './modules/dashboard/dashboard.module.js'
@@ -51,6 +52,7 @@ import { UsersModule } from './modules/users/users.module.js'
     ScanModule,
     PublicTrackingModule,
     CashModule,
+    PartnersModule,
     RealtimeModule,
     NotificationsModule,
     DashboardModule,

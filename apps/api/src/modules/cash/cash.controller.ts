@@ -79,6 +79,12 @@ export class CashController {
     return this.operations.create(dto, user.id)
   }
 
+  @Get('payments')
+  @RequirePermissions(PERMISSIONS.CASH_READ)
+  listPayments(@Query('parcelId') parcelId: string) {
+    return this.payments.listForParcel(parcelId)
+  }
+
   @Post('payments')
   @RequirePermissions(PERMISSIONS.CASH_OPERATE)
   recordPayment(

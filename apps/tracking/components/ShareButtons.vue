@@ -32,7 +32,7 @@ async function copyLink() {
       class="flex-1 h-12 rounded-xl bg-emerald-500 text-white text-sm font-medium
              flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors"
     >
-      <Icon name="ph:whatsapp-logo-fill" size="18" />
+      <TrackIcon name="ph:whatsapp-logo-fill" size="18" />
       Partager sur WhatsApp
     </a>
     <button
@@ -40,7 +40,7 @@ async function copyLink() {
              flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
       @click="copyLink"
     >
-      <Icon :name="copied ? 'ph:check-bold' : 'ph:link'" size="18" />
+      <TrackIcon :name="copied ? 'ph:check-bold' : 'ph:link'" size="18" />
       {{ copied ? 'Copié !' : 'Copier le lien' }}
     </button>
   </div>

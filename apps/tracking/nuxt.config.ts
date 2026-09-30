@@ -15,8 +15,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiUrl: process.env.NUXT_PUBLIC_API_URL ?? 'http://localhost:3000/api',
-      wsUrl: process.env.NUXT_PUBLIC_WS_URL ?? 'http://localhost:3000',
+      apiUrl: process.env.NUXT_PUBLIC_API_URL ?? 'http://localhost:3002/api',
+      wsUrl: process.env.NUXT_PUBLIC_WS_URL ?? 'http://localhost:3002',
     },
   },
 
@@ -24,10 +24,18 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'fr' },
       meta: [
-        { name: 'theme-color', content: '#0369a1' },
-        { name: 'description', content: 'Suivez votre colis GSGLOGISTIQUE en temps réel' },
+        { name: 'theme-color', content: '#fcf8f6' },
+        { name: 'description', content: 'GSGLOGISTIQUE — Transport de colis entre les États-Unis et l\'Afrique de l\'Ouest. Suivez votre envoi en temps réel.' },
       ],
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap',
+        },
+      ],
     },
   },
 
@@ -37,7 +45,7 @@ export default defineNuxtConfig({
       name: 'GSG Tracking',
       short_name: 'GSG Track',
       description: 'Suivez votre colis GSGLOGISTIQUE',
-      theme_color: '#0369a1',
+      theme_color: '#fcf8f6',
       background_color: '#ffffff',
       display: 'standalone',
       start_url: '/',
@@ -53,7 +61,19 @@ export default defineNuxtConfig({
 
   nitro: {
     compressPublicAssets: true,
+    // Dev-only: lets a single tunnel to this app also reach the API/WS —
+    // the phone never needs to talk to localhost:3000 directly.
+    devProxy: {
+      '/api': { target: 'http://localhost:3002/api', changeOrigin: true },
+      '/socket.io': { target: 'http://localhost:3002/socket.io', ws: true, changeOrigin: true },
+    },
   },
 
   typescript: { strict: true },
+
+  // Allows the ngrok tunnel's Host header through Nuxt's underlying Vite
+  // dev-server host check (otherwise it rejects unrecognized hosts).
+  vite: {
+    server: { allowedHosts: true },
+  },
 })

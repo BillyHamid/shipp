@@ -79,6 +79,21 @@ async function main() {
   console.log(`  ✓ ${usaAccount.code} (${usaAccount.currency})`)
   console.log(`  ✓ ${bfAccount.code} (${bfAccount.currency})`)
 
+  // ── 3b. Operating partners (profit-sharing) ───────────────────────────────
+  console.log('Creating partners...')
+  await prisma.partner.upsert({
+    where: { code: 'USA' },
+    update: { label: 'Admin USA' },
+    create: { code: 'USA', label: 'Admin USA' },
+  })
+  await prisma.partner.upsert({
+    where: { code: 'BF' },
+    update: { label: 'M. Sana (BF)' },
+    create: { code: 'BF', label: 'M. Sana (BF)' },
+  })
+  console.log('  ✓ USA — Admin USA')
+  console.log('  ✓ BF — M. Sana (BF)')
+
   // ── 4. Initial exchange rate ──────────────────────────────────────────────
   const rate = Number(process.env.EXCHANGE_RATE_USD_XOF ?? 563)
   await prisma.exchangeRate.upsert({
@@ -113,17 +128,27 @@ async function main() {
     { label: 'Autres USA → BF', category: 'OTHER', basePriceUsd: 18, perKgUsd: 15 },
   ]
   for (const r of rules) {
-    await prisma.pricingRule.create({
-      data: {
-        label: r.label,
-        category: r.category,
-        originCountry: 'US',
-        destCountry: 'BF',
-        basePriceUsd: r.basePriceUsd,
-        perKgUsd: r.perKgUsd,
-        active: true,
-      },
+    const existing = await prisma.pricingRule.findFirst({
+      where: { label: r.label, originCountry: 'US', destCountry: 'BF' },
     })
+    if (existing) {
+      await prisma.pricingRule.update({
+        where: { id: existing.id },
+        data: { basePriceUsd: r.basePriceUsd, perKgUsd: r.perKgUsd, active: true },
+      })
+    } else {
+      await prisma.pricingRule.create({
+        data: {
+          label: r.label,
+          category: r.category,
+          originCountry: 'US',
+          destCountry: 'BF',
+          basePriceUsd: r.basePriceUsd,
+          perKgUsd: r.perKgUsd,
+          active: true,
+        },
+      })
+    }
     console.log(`  ✓ ${r.label} (base $${r.basePriceUsd} + $${r.perKgUsd}/kg)`)
   }
 

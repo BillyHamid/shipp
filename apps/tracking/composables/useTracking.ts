@@ -19,6 +19,9 @@ export interface PublicTrackingResult {
 
 export function useTracking(trackingNumber: string) {
   const config = useRuntimeConfig()
+  const headers = config.public.apiUrl.includes('.ngrok-free.dev')
+    ? { 'ngrok-skip-browser-warning': '1' }
+    : undefined
 
   return useFetch<PublicTrackingResult>(
     `${config.public.apiUrl}/public/track/${encodeURIComponent(trackingNumber)}`,
@@ -26,6 +29,7 @@ export function useTracking(trackingNumber: string) {
       key: `tracking-${trackingNumber}`,
       // SSR-fetched on first load, re-fetchable client-side for live refresh
       server: true,
+      headers,
     },
   )
 }

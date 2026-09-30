@@ -28,6 +28,37 @@ const selectedCashAccountId = ref('')
 const payments = ref<any[]>([])
 const paymentAmount = ref(0)
 
+type ConditionEvent = {
+  occurredAt: string
+  actor?: { fullName?: string }
+  metadata?: { stage?: 'departure' | 'arrival'; condition?: string; note?: string; photo?: string }
+}
+
+const conditionChecks = computed(() =>
+  events.value.filter((event) => event.eventType === 'condition_checked') as ConditionEvent[],
+)
+const departureCondition = computed(() =>
+  [...conditionChecks.value].reverse().find((event) => event.metadata?.stage === 'departure'),
+)
+const arrivalCondition = computed(() =>
+  [...conditionChecks.value].reverse().find((event) => event.metadata?.stage === 'arrival'),
+)
+
+const CONDITION_LABELS: Record<string, string> = {
+  conforme: 'Conforme',
+  emballage_endommage: 'Emballage endommagé',
+  ouvert_incomplet: 'Ouvert ou incomplet',
+  humide_autre: 'Humide ou autre anomalie',
+}
+
+function conditionLabel(event?: ConditionEvent) {
+  return event?.metadata?.condition ? CONDITION_LABELS[event.metadata.condition] ?? event.metadata.condition : 'Aucun contrôle enregistré'
+}
+
+function openConditionPhoto(event?: ConditionEvent) {
+  if (event?.metadata?.photo) window.open(event.metadata.photo, '_blank', 'noopener,noreferrer')
+}
+
 const totalPaidUsd = computed(() =>
   payments.value.filter((p) => p.status === 'paid').reduce((sum, p) => sum + Number(p.amountUsd), 0),
 )
@@ -304,6 +335,25 @@ onMounted(load)
             <p class="text-ink-800">{{ parcel.box.reference }}</p>
           </div>
         </div>
+
+        <section class="card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div><p class="label">Contrôles qualité</p><h2 class="font-display font-bold text-ink-900">État du colis</h2></div>
+            <Icon icon="ph:camera-bold" class="size-5 text-brand-500" />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div v-for="entry in [{ title: 'État à l’envoi', event: departureCondition }, { title: 'État à l’arrivée', event: arrivalCondition }]" :key="entry.title" class="rounded-2xl border border-ink-100 bg-ink-50/40 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">{{ entry.title }}</p>
+              <p class="mt-2 font-semibold" :class="entry.event?.metadata?.condition && entry.event.metadata.condition !== 'conforme' ? 'text-red-700' : 'text-ink-800'">{{ conditionLabel(entry.event) }}</p>
+              <template v-if="entry.event">
+                <p class="mt-1 text-xs text-ink-500">{{ formatDateTime(entry.event.occurredAt) }} · {{ entry.event.actor?.fullName ?? 'Agent' }}</p>
+                <p v-if="entry.event.metadata?.note" class="mt-3 text-sm text-ink-600">{{ entry.event.metadata.note }}</p>
+                <img v-if="entry.event.metadata?.photo" :src="entry.event.metadata.photo" alt="Photo de l’état du colis" class="mt-3 h-36 w-full rounded-xl border border-ink-100 object-cover cursor-zoom-in" @click="openConditionPhoto(entry.event)" />
+              </template>
+              <p v-else class="mt-2 text-sm text-ink-400">En attente d’un contrôle depuis Scan.</p>
+            </div>
+          </div>
+        </section>
 
         <div class="card p-5">
           <h2 class="font-display font-bold text-ink-900 mb-4">Historique</h2>

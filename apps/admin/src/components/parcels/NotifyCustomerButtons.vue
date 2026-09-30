@@ -31,7 +31,9 @@ async function sendSms() {
   try {
     // Real send via the Aqilas gateway — not a mailto/sms: link this time.
     const res = await api.post(`/parcels/${props.parcelId}/notify-sms`)
-    success(`SMS envoyé (${res.data.cost} ${res.data.currency})`)
+    // Le coût retourné par la passerelle est conservé côté serveur dans
+    // l'historique d'audit. Il ne concerne pas l'agent qui envoie le SMS.
+    success('SMS envoyé')
   } catch (e: any) {
     toastError(e.response?.data?.message ?? "Échec de l'envoi du SMS")
   } finally {

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Header, Param, Post, Query } from '@nestjs/common'
+import { z } from 'zod'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import {
   CreateParcelDtoSchema,
@@ -6,13 +7,26 @@ import {
   type CreateParcelDto,
   type TransitionParcelDto,
 } from '@gsg/shared-types/schemas'
-import { PARCEL_STATES, PAYMENT_STATES, type ParcelState, type PaymentState } from '@gsg/shared-types/domain'
+import {
+  PARCEL_STATES,
+  PAYMENT_STATES,
+  PAYMENT_TIMINGS,
+  type ParcelState,
+  type PaymentState,
+  type PaymentTiming,
+} from '@gsg/shared-types/domain'
 import { PERMISSIONS } from '@gsg/shared-types/permissions'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js'
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator.js'
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js'
 import type { AuthenticatedUser } from '../auth/auth.service.js'
-import { CreateParcelCommand, TransitionParcelCommand } from './commands/index.js'
+import { CreateParcelCommand, RecordParcelConditionCommand, TransitionParcelCommand } from './commands/index.js'
+
+const RecordConditionDtoSchema = z.object({
+  condition: z.enum(['conforme', 'emballage_endommage', 'ouvert_incomplet', 'humide_autre']),
+  note: z.string().trim().max(500).optional(),
+  photo: z.string().max(8_000_000).optional(),
+})
 import { ListParcelsQuery, GetParcelQuery, GetParcelEventsQuery } from './queries/index.js'
 import { ParcelStateMachine } from './domain/parcel-state-machine.js'
 import { QrService } from '../qr/qr.service.js'
@@ -32,6 +46,7 @@ export class ParcelsController {
     @Query('query') query?: string,
     @Query('state') state?: string,
     @Query('paymentState') paymentState?: string,
+    @Query('paymentTiming') paymentTiming?: string,
     @Query('boxId') boxId?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
@@ -43,6 +58,7 @@ export class ParcelsController {
         query,
         state: this.isValidState(state) ? state : undefined,
         paymentState: this.isValidPaymentState(paymentState) ? paymentState : undefined,
+        paymentTiming: this.isValidPaymentTiming(paymentTiming) ? paymentTiming : undefined,
         boxId,
         dateFrom: dateFrom ? new Date(dateFrom) : undefined,
         dateTo: dateTo ? new Date(dateTo) : undefined,
@@ -78,6 +94,18 @@ export class ParcelsController {
   async qrCode(@Param('id') id: string): Promise<string> {
     const parcel = await this.queryBus.execute(new GetParcelQuery(id))
     return this.qr.renderSvg(parcel.trackingNumber, parcel.qrSignature)
+  }
+
+  @Post(':id/condition')
+  @RequirePermissions(PERMISSIONS.PARCELS_READ)
+  recordCondition(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(RecordConditionDtoSchema)) dto: z.infer<typeof RecordConditionDtoSchema>,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.commandBus.execute(
+      new RecordParcelConditionCommand(id, dto.condition, dto.note, dto.photo, user.id),
+    )
   }
 
   @Post()
@@ -121,5 +149,9 @@ export class ParcelsController {
 
   private isValidPaymentState(v?: string): v is PaymentState {
     return !!v && (PAYMENT_STATES as readonly string[]).includes(v)
+  }
+
+  private isValidPaymentTiming(v?: string): v is PaymentTiming {
+    return !!v && (PAYMENT_TIMINGS as readonly string[]).includes(v)
   }
 }
